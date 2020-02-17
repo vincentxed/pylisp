@@ -1,8 +1,12 @@
 import operator
+from collections import Iterable
 from collections import deque
 
 SEPARATOR = " "
+KW_ATOM = "atom?"
+KW_QUOTE = "quote"
 KW_DEFINE = "define"
+
 
 def tokenize(s):
     """
@@ -17,11 +21,13 @@ def parse(tokens):
     if token == "(":
         sexp = List()
         while tokens[0] != ")":
-            sexp.add(parse(tokens))
+            sexp.append(parse(tokens))
+            if not tokens:
+                raise SyntaxError("Missing )")
         assert tokens.popleft() == ")"
         return sexp
     elif token == ")":
-        raise SyntaxError("Unexpected ")
+        raise SyntaxError("Unexpected )")
     else:
         return Atom(token)
 
@@ -52,10 +58,13 @@ class Program:
             "*": operator.mul,
             "/": operator.truediv,
             "eq?": operator.eq,  # is_
+            "car": lambda x: x[0],
+            "cdr": lambda x: List(x[1:]),
+            "cons": lambda x, y: List([x] + y) if isinstance(y, List) else List([x] + [y]),
         }
         values = [sexp.eval(env) for sexp in self.sexps]
         print("program values:", values)
-        return values[-1]
+        return str(values[-1])
 
 
 class Atom:
@@ -69,38 +78,40 @@ class Atom:
             except ValueError:
                 self.x = token
 
+    def __repr__(self):
+        return str(self.x)
+
+    def __str__(self):
+        return str(self.x)
+
     def eval(self, env=None):
         if isinstance(self.x, str) and self.x in env:
             return env[self.x]
         return self.x
 
+
+class List(list):
     def __repr__(self):
-        return str(self.x)
+        return "(List " + " ".join(map(repr, self)) + ")"
 
     def __str__(self):
-        return str(self.x)
-
-
-class List:
-    def __init__(self):
-        self.x = []
-
-    def add(self, y):
-        self.x.append(y)
-
-    def __repr__(self):
-        return "(List " + " ".join(map(repr, self.x)) + ")"
-
-    def __str__(self):
-        return " ".join(map(str, self.x))
+        return f'\'({" ".join(map(str, self))})'
 
     def eval(self, env=None):
-        values = [item.eval(env) for item in self.x[:-1]]
-        print("values:", values)
-        last_item = self.x[-1].eval(env)
-        if last_item == KW_DEFINE:
-            assert len(values) == 2
-            symbol, value = values
-            env[symbol] = value
+        args = self[:-1]
+        op = self[-1].eval(env)
+        print("op:", op)
+        if op == KW_QUOTE:
+            assert len(args) == 1
+            return args[0]
+        elif op == KW_ATOM:
+            assert len(args) == 1
+            return isinstance(args[0], Atom) or not isinstance(args[0].eval(env), list)
+        elif op == KW_DEFINE:
+            assert len(args) == 2
+            env[args[0].eval(env)] = args[1].eval(env)
             return None
-        return last_item(*values)
+
+        values = [item.eval(env) for item in self[:-1]]
+        print("values:", values)
+        return op(*values)
