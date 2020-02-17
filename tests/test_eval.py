@@ -38,3 +38,11 @@ class TestEval(unittest.TestCase):
         self.assertEqual("3", Program("(plus-one ((x) (x 1 +) lambda) define) (2 plus-one)").eval())
         self.assertEqual("12", Program("(5 3 ((x y) ((x 1 -) y *) lambda))").eval())
         self.assertEqual("10", Program("(3 5 ((x y) ((x 1 -) y *) lambda))").eval())
+
+    def test_cond(self):
+        self.assertEqual("two",
+                         Program("(a 2 define)"
+                                 "(((1 a eq?) one) ((2 a eq?) two) ((3 a eq?) three) (nope else) cond)").eval())
+        self.assertEqual("nope",
+                         Program("(a whatev define)"
+                                 "(((1 a eq?) one) ((2 a eq?) two) ((3 a eq?) three) (else nope) cond)").eval())

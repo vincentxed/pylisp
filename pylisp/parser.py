@@ -7,6 +7,7 @@ KW_ATOM = "atom?"
 KW_QUOTE = "quote"
 KW_DEFINE = "define"
 KW_LAMBDA = "lambda"
+KW_COND = "cond"
 
 def tokenize(s):
     """
@@ -115,8 +116,14 @@ class List(list):
         elif op == KW_LAMBDA:
             assert len(args) == 2
             return Udf(args[0], args[1], env)
-
+        elif op == KW_COND:
+            for test_expression in args:
+                if test_expression[0].eval(env):
+                    return test_expression[1].eval()
+            return None
         values = [item.eval(env) for item in self[:-1]]
+        if __debug__:
+            print("values:", values)
         return op(*values)
 
 
