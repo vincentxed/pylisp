@@ -1,5 +1,7 @@
 # Basic postfix Lisp interpreter
 
+An s-expression can be either an atom or a list.
+
 ## Setup (development environment)
 
 Run locally in a standard Python 3 virtual enviroment:
@@ -17,3 +19,9 @@ $ python -m pytest tests/
 ```
 
 ## Run
+
+## References
+
+Ideas and chunks of code come from:
+
+- http://norvig.com/lispy.html
