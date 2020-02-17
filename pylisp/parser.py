@@ -6,7 +6,7 @@ SEPARATOR = " "
 KW_ATOM = "atom?"
 KW_QUOTE = "quote"
 KW_DEFINE = "define"
-
+KW_LAMBDA = "lambda"
 
 def tokenize(s):
     """
@@ -52,7 +52,8 @@ class Program:
         return "\n".join(map(str, self.sexps))
 
     def eval(self):
-        env = {
+        env = Env()
+        env.update({
             "+": operator.add,
             "-": operator.sub,
             "*": operator.mul,
@@ -61,9 +62,8 @@ class Program:
             "car": lambda x: x[0],
             "cdr": lambda x: List(x[1:]),
             "cons": lambda x, y: List([x] + y) if isinstance(y, List) else List([x] + [y]),
-        }
+        })
         values = [sexp.eval(env) for sexp in self.sexps]
-        print("program values:", values)
         return str(values[-1])
 
 
@@ -85,8 +85,10 @@ class Atom:
         return str(self.x)
 
     def eval(self, env=None):
-        if isinstance(self.x, str) and self.x in env:
-            return env[self.x]
+        if env and isinstance(self.x, str):
+            _env = env.find(self.x)
+            if self.x in _env:
+                return _env[self.x]
         return self.x
 
 
@@ -100,7 +102,6 @@ class List(list):
     def eval(self, env=None):
         args = self[:-1]
         op = self[-1].eval(env)
-        print("op:", op)
         if op == KW_QUOTE:
             assert len(args) == 1
             return args[0]
@@ -111,7 +112,29 @@ class List(list):
             assert len(args) == 2
             env[args[0].eval(env)] = args[1].eval(env)
             return None
+        elif op == KW_LAMBDA:
+            assert len(args) == 2
+            return Udf(args[0], args[1], env)
 
         values = [item.eval(env) for item in self[:-1]]
-        print("values:", values)
         return op(*values)
+
+
+class Udf:
+    def __init__(self, arg_names, body, env):
+        self.arg_names, self.body, self.env = arg_names, body, env
+
+    def __call__(self, *args):
+        return self.body.eval(
+            Env([arg_name.eval(self.env)
+                 for arg_name in self.arg_names], args, self.env))
+
+
+class Env(dict):
+    def __init__(self, arg_names=(), args=(), outer=None):
+        super().__init__()
+        self.update(zip(arg_names, args))
+        self.outer = outer
+
+    def find(self, arg_name):
+        return self if not self.outer or arg_name in self else self.outer.find(arg_name)

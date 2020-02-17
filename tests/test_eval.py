@@ -33,3 +33,8 @@ class TestEval(unittest.TestCase):
         self.assertEqual("True", Program("(a atom?)").eval())
         self.assertEqual("True", Program("((3 4 +) atom?)").eval())
         self.assertEqual("False", Program("((3 4 cons) atom?)").eval())
+
+    def test_lambda(self):
+        self.assertEqual("3", Program("(plus-one ((x) (x 1 +) lambda) define) (2 plus-one)").eval())
+        self.assertEqual("12", Program("(5 3 ((x y) ((x 1 -) y *) lambda))").eval())
+        self.assertEqual("10", Program("(3 5 ((x y) ((x 1 -) y *) lambda))").eval())
