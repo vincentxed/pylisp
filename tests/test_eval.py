@@ -21,7 +21,7 @@ class TestEval(unittest.TestCase):
         self.assertEqual("'(4)", Program("(arr (3 4 cons) define) (arr cdr)").eval())
         self.assertEqual("'(3 4)", Program("(arr (5 (3 4 cons) cons) define) (arr cdr)").eval())
 
-    @unittest.expectedFailure
+    @unittest.expectedFailure  # Unimplemented
     def test_list_parsing(self):
         self.assertEqual("'(3 4)", Program("(arr '(5 3 4) define) (arr cdr)").eval())
 

@@ -1,5 +1,7 @@
+""" Parse and evaluate.
+"""
+
 import operator
-from collections import Iterable
 from collections import deque
 
 SEPARATOR = " "
@@ -8,6 +10,7 @@ KW_QUOTE = "quote"
 KW_DEFINE = "define"
 KW_LAMBDA = "lambda"
 KW_COND = "cond"
+
 
 def tokenize(s):
     """
@@ -37,24 +40,10 @@ class Program:
     """
     Essentially a list of S-expressions.
     """
-    def __init__(self, s):
-        self.sexps = []
-        if not s:
-            raise SyntaxError("Empty program")
-        tokens = tokenize(s)
-
-        while tokens:
-            self.sexps.append(parse(tokens))
-
-    def __repr__(self):
-        return "\n".join(map(repr, self.sexps))
-
-    def __str__(self):
-        return "\n".join(map(str, self.sexps))
-
-    def eval(self):
-        env = Env()
-        env.update({
+    def __init__(self, s='', env=None, repl_mode=False):
+        self.repl_mode = repl_mode
+        self.env = Env()
+        self.env.update({
             "+": operator.add,
             "-": operator.sub,
             "*": operator.mul,
@@ -64,11 +53,35 @@ class Program:
             "cdr": lambda x: List(x[1:]),
             "cons": lambda x, y: List([x] + y) if isinstance(y, List) else List([x] + [y]),
         })
-        values = [sexp.eval(env) for sexp in self.sexps]
+        if env:
+            self.env.update(env)
+        self.sexps = []
+        if not self.repl_mode:
+            if not s:
+                raise SyntaxError("Empty program")
+            tokens = tokenize(s)
+
+            while tokens:
+                self.sexps.append(parse(tokens))
+
+    def __repr__(self):
+        return "\n".join(map(repr, self.sexps))
+
+    def __str__(self):
+        return "\n".join(map(str, self.sexps))
+
+    def eval(self):
+        values = [sexp.eval(self.env) for sexp in self.sexps]
         return str(values[-1])
+
+    def add_and_run_statement(self, s):
+        tokens = tokenize(s)
+        self.sexps.append(parse(tokens))
+        return str(self.sexps[-1].eval(self.env))
 
 
 class Atom:
+    """Atomic S-expression"""
     def __init__(self, token):
         self.x = None
         try:
@@ -79,11 +92,11 @@ class Atom:
             except ValueError:
                 self.x = token
 
-    def __repr__(self):
-        return str(self.x)
-
     def __str__(self):
         return str(self.x)
+
+    def __repr__(self):
+        return f"(Atom {str(self.x)})"
 
     def eval(self, env=None):
         if env and isinstance(self.x, str):
@@ -94,11 +107,12 @@ class Atom:
 
 
 class List(list):
-    def __repr__(self):
-        return "(List " + " ".join(map(repr, self)) + ")"
-
+    """List S-expression"""
     def __str__(self):
-        return f'\'({" ".join(map(str, self))})'
+        return f"'({' '.join(map(str, self))})"
+
+    def __repr__(self):
+        return f"(List {' '.join(map(repr, self))})"
 
     def eval(self, env=None):
         args = self[:-1]
@@ -122,12 +136,11 @@ class List(list):
                     return test_expression[1].eval()
             return None
         values = [item.eval(env) for item in self[:-1]]
-        if __debug__:
-            print("values:", values)
         return op(*values)
 
 
 class Udf:
+    """User-defined function. Generate a deeper-level Env when execute."""
     def __init__(self, arg_names, body, env):
         self.arg_names, self.body, self.env = arg_names, body, env
 
@@ -138,6 +151,7 @@ class Udf:
 
 
 class Env(dict):
+    """Mapping from symbols to expressions."""
     def __init__(self, arg_names=(), args=(), outer=None):
         super().__init__()
         self.update(zip(arg_names, args))
