@@ -2,6 +2,7 @@ import operator
 from collections import deque
 
 SEPARATOR = " "
+KW_DEFINE = "define"
 
 def tokenize(s):
     """
@@ -94,6 +95,12 @@ class List:
         return " ".join(map(str, self.x))
 
     def eval(self, env=None):
-        values = [component.eval(env) for component in self.x]
+        values = [item.eval(env) for item in self.x[:-1]]
         print("values:", values)
-        return values[-1](*values[:-1])
+        last_item = self.x[-1].eval(env)
+        if last_item == KW_DEFINE:
+            assert len(values) == 2
+            symbol, value = values
+            env[symbol] = value
+            return None
+        return last_item(*values)
