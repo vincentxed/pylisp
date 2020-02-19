@@ -21,7 +21,7 @@ Sample usage:
 ```
 Program("(plus-one ((x) (x 1 +) lambda) define)"
         "(2 plus-one)").eval()
-# output: "two"
+# output: "3"
 ```
 
 REPL: (`python repl.py`)
