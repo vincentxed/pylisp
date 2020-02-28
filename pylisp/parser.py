@@ -2,7 +2,9 @@
 """
 
 import operator
+from collections import Callable
 from collections import deque
+from functools import reduce
 
 SEPARATOR = " "
 KW_ATOM = "atom?"
@@ -44,10 +46,12 @@ class Program:
         self.repl_mode = repl_mode
         self.env = Env()
         self.env.update({
-            "+": operator.add,
-            "-": operator.sub,
-            "*": operator.mul,
-            "/": operator.truediv,
+            "+": lambda *args: sum(args),
+            "-": lambda *args: args[0] - sum(args[1:]),
+            "*": lambda *args: reduce(operator.mul, args),
+            "/": lambda *args: args[0] / reduce(operator.mul, args[1:]),
+            "<": operator.lt,
+            ">": operator.gt,
             "eq?": operator.eq,  # is_
             "car": lambda x: x[0],
             "cdr": lambda x: List(x[1:]),
@@ -114,7 +118,7 @@ class List(list):
     def __repr__(self):
         return f"(List {' '.join(map(repr, self))})"
 
-    def eval(self, env=None):
+    def eval(self, env):
         args = self[:-1]
         op = self[-1].eval(env)
         if op == KW_QUOTE:
@@ -133,9 +137,10 @@ class List(list):
         elif op == KW_COND:
             for test_expression in args:
                 if test_expression[0].eval(env):
-                    return test_expression[1].eval()
+                    return test_expression[1].eval(env)
             return None
         values = [item.eval(env) for item in self[:-1]]
+        assert isinstance(op, Callable), f"Not callable: {type(op)}:{op}. {env}"
         return op(*values)
 
 

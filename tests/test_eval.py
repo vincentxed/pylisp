@@ -46,3 +46,24 @@ class TestEval(unittest.TestCase):
         self.assertEqual("nope",
                          Program("(a whatev define)"
                                  "(((1 a eq?) one) ((2 a eq?) two) ((3 a eq?) three) (else nope) cond)").eval())
+
+    def test_fibo(self):
+        """
+        (defun fibo (x)
+          (cond
+            ((< x 2) x)
+            (t (+ (fibo (- x 1)) (fibo (- x 2))))))
+        """
+        self.assertEqual("55",
+                         Program("(fibo ((x) (((x 2 <) x) (t (((x 1 -) fibo) ((x 2 -) fibo) +)) cond) lambda) define)"
+                                 "(10 fibo)").eval())
+
+    def test_arithmetics2(self):
+        self.assertEqual("10",
+                         Program("(1 2 3 4 +)").eval())
+        self.assertEqual("-8",
+                         Program("(1 2 3 4 -)").eval())
+        self.assertEqual("24",
+                         Program("(1 2 3 4 *)").eval())
+        self.assertEqual("0.125",
+                         Program("(1 2 4 /)").eval())
