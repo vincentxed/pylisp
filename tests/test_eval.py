@@ -61,9 +61,18 @@ class TestEval(unittest.TestCase):
                                         " define)"
                                         "(10 fibo)"))
 
-    def test_arithmetic(self):
+    def test_arithmetic2(self):
         self._test_output("10", Program("(1 2 3 4 +)"))
         self._test_output("-8", Program("(1 2 3 4 -)"))
         self._test_output("24", Program("(1 2 3 4 *)"))
         self._test_output("0.125", Program("(1 2 4 /)"))
 
+    def test_print(self):
+        self._test_output("2\n", Program("(2 print)"))
+
+    @unittest.expectedFailure  # Unimplemented
+    def test_let(self):
+        self._test_output(
+            "?", Program("(x 2 define)"
+                         "(((x 3) let) (x print))"
+                         "(x print)"))

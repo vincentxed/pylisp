@@ -43,6 +43,7 @@ class Program:
     Essentially a list of S-expressions.
     """
     def __init__(self, s='', env=None, repl_mode=False):
+        self.stdout = []
         self.repl_mode = repl_mode
         self.env = Env()
         self.env.update({
@@ -56,6 +57,7 @@ class Program:
             "car": lambda x: x[0],
             "cdr": lambda x: List(x[1:]),
             "cons": lambda x, y: List([x] + y) if isinstance(y, List) else List([x] + [y]),
+            "print": lambda x: self.stdout.append(str(x)),
         })
         if env:
             self.env.update(env)
@@ -76,12 +78,25 @@ class Program:
 
     def eval(self):
         values = [sexp.eval(self.env) for sexp in self.sexps]
-        return str(values[-1])
+        str_output = str(values[-1]) if values[-1] is not None else ""
+        print_statement_outputs = self.get_std_out()
+        if print_statement_outputs:
+            str_output = print_statement_outputs + "\n" + str_output
+        return str_output
 
     def add_and_run_statement(self, s):
         tokens = tokenize(s)
         self.sexps.append(parse(tokens))
-        return str(self.sexps[-1].eval(self.env))
+        output = self.sexps[-1].eval(self.env)
+        print(self.get_std_out())
+        return str(output)
+
+    def get_std_out(self):
+        if self.stdout:
+            str_output = "\n".join(self.stdout)
+            self.stdout = []
+            return str_output
+        return ""
 
 
 class Atom:
@@ -154,6 +169,9 @@ class Udf:
             Env([arg_name.eval(self.env)
                  for arg_name in self.arg_names], args, self.env))
 
+class LetScope:
+    def __init__(self):
+        pass
 
 class Env(dict):
     """Mapping from symbols to expressions."""
